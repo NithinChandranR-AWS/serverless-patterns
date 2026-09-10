@@ -52,20 +52,28 @@ export class ApigwLambdaWebsearchBedrockStack extends cdk.Stack {
       environment: {
         GATEWAY_ID: gateway.gatewayId,
         GATEWAY_URL: gateway.gatewayUrl ?? '',
-        MODEL_ID: 'us.anthropic.claude-sonnet-4-20250514-v1:0',  // Update to latest model as needed
+        MODEL_ID: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',  // Update to latest model as needed
       },
     });
 
     // Grant the AWS Lambda function permission to invoke the gateway
     gateway.grantInvoke(fn);
 
-    // Grant the AWS Lambda function permission to invoke Amazon Bedrock models
+    // Grant the AWS Lambda function permission to invoke Amazon Bedrock models.
+    // ApplyGuardrail is included because some accounts enforce an organization- or
+    // account-level default guardrail, which Amazon Bedrock applies automatically on
+    // every InvokeModel call. Without it, InvokeModel fails with AccessDeniedException
+    // in guardrail-enforced accounts even though the pattern configures no guardrail.
     fn.addToRolePolicy(new iam.PolicyStatement({
       actions: ['bedrock:InvokeModel'],
       resources: [
         `arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4*`,
         `arn:aws:bedrock:*:${this.account}:inference-profile/us.anthropic.claude-sonnet-4*`,
       ],
+    }));
+    fn.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['bedrock:ApplyGuardrail'],
+      resources: [`arn:aws:bedrock:*:${this.account}:guardrail/*`],
     }));
 
     // Amazon API Gateway REST API as the user-facing endpoint
