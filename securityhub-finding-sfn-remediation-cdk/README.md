@@ -51,7 +51,7 @@ Learn more about this pattern at Serverless Land Patterns: https://serverlesslan
 > **Prerequisite:** AWS Security Hub must be enabled in the target account and Region before deploying. Enable it with `aws securityhub enable-security-hub` (or via the console). Without it, no findings are generated and the workflow is never triggered.
 
 ```bash
-cd securityhub-finding-sfn-remediation-cdk/cdk
+cd securityhub-finding-sfn-remediation-cdk
 npm install
 cdk deploy
 ```

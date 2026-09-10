@@ -34,13 +34,13 @@ export class SecurityhubFindingSfnRemediationStack extends cdk.Stack {
     const remediateFn = new lambda.Function(this, 'RemediateFunction', {
       runtime: lambda.Runtime.PYTHON_3_12,
       handler: 'handler.lambda_handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../lambdas/remediate')),
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambdas/remediate')),
       timeout: cdk.Duration.seconds(120),
       memorySize: 256,
       description: 'Remediates AWS Security Hub findings: closes open SGs, enables encryption, enforces MFA',
     });
 
-    // EC2/S3/IAM permissions for remediation actions
+    // Amazon EC2 / Amazon S3 / IAM permissions for remediation actions
     remediateFn.addToRolePolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
@@ -73,7 +73,7 @@ export class SecurityhubFindingSfnRemediationStack extends cdk.Stack {
     // 3. AWS Step Functions: Remediation Workflow
     // =========================================================
 
-    // Remediate via Lambda
+    // Remediate via AWS Lambda
     const remediateTask = new sfnTasks.LambdaInvoke(this, 'RemediateFinding', {
       lambdaFunction: remediateFn,
       outputPath: '$.Payload',
