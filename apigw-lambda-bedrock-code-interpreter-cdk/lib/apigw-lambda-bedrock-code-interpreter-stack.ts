@@ -10,9 +10,14 @@ export class ApigwLambdaBedrockCodeInterpreterStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // Amazon Bedrock AgentCore Code Interpreter for safe code execution
+    // Amazon Bedrock AgentCore Code Interpreter for safe code execution.
+    // The name must be unique within an account+Region, so derive a short
+    // deterministic suffix from the stack identity. A fixed name would collide
+    // when the pattern is deployed more than once (e.g. two Regions or two
+    // stacks) in the same account.
+    const nameSuffix = cdk.Names.uniqueResourceName(this, { maxLength: 12 }).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
     const codeInterpreter = new agentcore.CodeInterpreterCustom(this, 'CodeInterpreter', {
-      codeInterpreterCustomName: 'data_analyst',
+      codeInterpreterCustomName: `data_analyst_${nameSuffix}`,
       description: 'Sandboxed Python execution for AI-generated data analysis code',
       networkConfiguration: agentcore.CodeInterpreterNetworkConfiguration.usingSandboxNetwork(),
     });
@@ -60,6 +65,15 @@ export class ApigwLambdaBedrockCodeInterpreterStack extends cdk.Stack {
         `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/${inferenceProfileId}`,
         foundationModelArn,
       ],
+    }));
+
+    // Some accounts enforce an account- or org-level default guardrail, which
+    // Amazon Bedrock applies automatically on every InvokeModel call. Without
+    // this permission, InvokeModel fails with AccessDeniedException in those
+    // accounts even though the pattern configures no guardrail of its own.
+    fn.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['bedrock:ApplyGuardrail'],
+      resources: [`arn:aws:bedrock:${this.region}:${this.account}:guardrail/*`],
     }));
 
     // Amazon API Gateway REST API
